@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { register } from "../controllers/user.controller.js";
+import { login, register } from "../controllers/user.controller.js";
 //import { register } from "../controllers/user.controller.js"
 const router = new Router();
 
 
 /** post methods */
 router.post('/register', register);
+router.post("/login", login);
 
 
 

@@ -33,4 +33,5 @@ const userSchema = new Schema({
  type: "String",}
 });
 
-export default model('User', userSchema);
+const userModel =  model('tester', userSchema);
+export default userModel;

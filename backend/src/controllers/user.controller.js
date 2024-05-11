@@ -1,10 +1,7 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import userModel from "../model/user.model.js";
-
-/** middleware for verify user */
-export async function verifyUser(req, res, next) {
-    return res.status(404).send({ error: "Authentication Error" });
-}
-
+import cookieParser from "cookie-parser";
 /** POST: http://localhost:8080/api/register 
  * @param : {
   "username" : "example123",
@@ -18,45 +15,62 @@ export async function verifyUser(req, res, next) {
 }
 */
 
-
 export async function register(req, res) {
-    const userInfo = req.body;
+  try {
     const { username, password, email, firstName, lastName } = req.body;
 
-    if (!username || !password || !email || !firstName || !lastName) {
-        return res.status(400).json({ error: "All required fields must be provided" });
+    // Validation
+    const missingFields = checkRequiredFields({
+      username,
+      password,
+      email,
+      firstName,
+      lastName,
+    });
+    if (missingFields.length > 0) {
+      return res
+        .status(400)
+        .json({ error: "Missing required fields", missingFields });
     }
 
-    try {
-        const userExists = await userModel.exists({ email: email });
-        if (userExists) {
-            return res.status(409).json("User already exists");
-        } else {
-            // Save data 
-            const user = new userModel(userInfo); // No need to wrap userInfo in curly braces
-            await user.save();
-            // Respond with success message
-            return res.status(201).json("User registered successfully");
-        }
-    } catch (err) {
-        res.status(500).send({ message: err.message });
+    const userExists = await userModel.findOne({ email });
+    if (userExists) {
+      return res.status(409).json({ error: "User already exists" });
     }
+
+    // Password Hashing
+    const hash = await bcrypt.hash(password, 10);
+
+    // Store hash in your password DB
+    const createUser = await userModel.create({
+      username,
+      password: hash,
+      email,
+      firstName,
+      lastName,
+    });
+    var token = jwt.sign({ email: email }, "shhhhh");
+    res.cookie("token", token);
+    console.log(token);
+    res
+      .status(201)
+      .json({ message: "User created successfully", user: createUser });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/** validation of input fields */
+function checkRequiredFields(fields) {
+  const requiredFields = [
+    "username",
+    "password",
+    "email",
+    "firstName",
+    "lastName",
+  ];
+  return requiredFields.filter((field) => !fields[field]);
+}
 
 /** POST: http://localhost:8080/api/login 
  * @param: {
@@ -65,39 +79,52 @@ export async function register(req, res) {
 }
 */
 
-
 export async function login(req, res) {
+  try {
+    const { email, password } = req.body;
 
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" });
+    }
+
+    const token = jwt.sign({ email: email }, "shhhhh", { expiresIn: "24h" });
+
+    res.cookie("token", token, { httpOnly: true });
+    res
+      .status(200)
+      .json({ success: true, message: "You have successfully logged in" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 }
+
+
+
+
 
 /** GET: http://localhost:8080/api/user/example123 */
-export async function getUser(req, res) {
+export async function getUser(req, res) {}
 
-}
-
-
-export async function updateUser(req, res) {
-
-}
+export async function updateUser(req, res) {}
 
 /** GET: http://localhost:8080/api/generateOTP */
-export async function generateOTP(req, res) {
-
-}
+export async function generateOTP(req, res) {}
 
 /** GET: http://localhost:8080/api/verifyOTP */
-export async function verifyOTP(req, res) {
-
-}
+export async function verifyOTP(req, res) {}
 
 /** GET: http://localhost:8080/api/createResetSession */
-export async function createResetSession(req, res) {
-
-}
+export async function createResetSession(req, res) {}
 
 /** PUT: http://localhost:8080/api/resetPassword */
-export async function resetPassword(req, res) {
-
-}
-
-
+export async function resetPassword(req, res) {}
