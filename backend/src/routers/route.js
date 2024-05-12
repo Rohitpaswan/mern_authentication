@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, register } from "../controllers/user.controller.js";
+import { getUser, login, register, updateUser } from "../controllers/user.controller.js";
 //import { register } from "../controllers/user.controller.js"
 const router = new Router();
 
@@ -16,13 +16,14 @@ router.post("/login", login);
 
 
 // /** Get method */
-// router.route("/user/:username").get();
+ router.route("/user/:username").get(getUser);
+
 // router.route("/genrateOTP").get();
 // router.route("/verfyOTP").get();
 // router.route("/createRestSession").get();
 
 // /**PUt Method */
-// router.route("/updateuser").put();
+ router.route("/updateuser").put(updateUser);
 // router.route("/resetpassword").put();
 
 export default router;

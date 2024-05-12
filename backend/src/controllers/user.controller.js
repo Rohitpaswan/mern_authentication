@@ -108,14 +108,49 @@ export async function login(req, res) {
   }
 }
 
-
-
-
-
 /** GET: http://localhost:8080/api/user/example123 */
-export async function getUser(req, res) {}
+export async function getUser(req, res) {
+  try {
+    console.log("user");
+    const { username } = req.params; // Extracting the username from req.params
+    if (!username) {
+      return res.status(404).json("Invalid username");
+    }
+    console.log(typeof username);
+    const option = { password: 0 }; // remove password from response
 
-export async function updateUser(req, res) {}
+    const userExist = await userModel.findOne({ username }, option);
+    if (!userExist) {
+      return res.status(404).json({ message: "User not found" });
+    } else {
+      return res.status(200).json({ message: "success", userExist });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+
+/** GET: http://localhost:8080/api/updateuser?id=123455  */
+export async function updateUser(req, res) {
+  const id = req.query.id;
+  if (id) {
+    try {
+      const userdata = req.body;
+      const updatedUser = await userModel.findOneAndUpdate(
+        { _id: id }, //filter : Find the user by their id
+        userdata, // Data to be update
+        { new: true } // Options: Return the updated document
+      );
+      return res.status(200).json({ message: "success", user: updatedUser });
+    } catch (error) {
+      return response.status(404).json({ message: error.message });
+    }
+  } else {
+    res.status(404).json({ message: "Invalid userId" });
+  }
+}
 
 /** GET: http://localhost:8080/api/generateOTP */
 export async function generateOTP(req, res) {}
