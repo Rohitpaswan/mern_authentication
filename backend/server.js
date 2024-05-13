@@ -9,14 +9,12 @@ import userModel from "./src/model/user.model.js";
 
 // Create an Express application
 const app = express();
-const port = 3000; // Choose any port you like
+const port = 8080; // Choose any port you like
 
 // Middleware to parse JSON and URL-encoded bodies
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-
 app.use('/api', router)
 
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { getUser, login, register, updateUser } from "../controllers/user.controller.js";
-//import { register } from "../controllers/user.controller.js"
+import { createResetSession, generateOTP, getUser, login, register, resetPassword, updateUser, verifyOTP } from "../controllers/user.controller.js";
+import auth, { localVariable } from "../middleware/auth.js";
+
 const router = new Router();
 
 
@@ -17,13 +18,12 @@ router.post("/login", login);
 
 // /** Get method */
  router.route("/user/:username").get(getUser);
-
-// router.route("/genrateOTP").get();
-// router.route("/verfyOTP").get();
-// router.route("/createRestSession").get();
+ router.route("/genrateOTP").get(localVariable , generateOTP);
+ router.route("/verfyOTP").get(verifyOTP);
+ router.route("/createRestSession").get(createResetSession);
 
 // /**PUt Method */
- router.route("/updateuser").put(updateUser);
-// router.route("/resetpassword").put();
+ router.route("/updateuser").put( auth ,updateUser);
+    router.route("/resetpassword").put(resetPassword);
 
 export default router;

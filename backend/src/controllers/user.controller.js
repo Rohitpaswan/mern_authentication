@@ -1,8 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import otpGenerator from "otp-generation";
 import userModel from "../model/user.model.js";
-import cookieParser from "cookie-parser";
-/** POST: http://localhost:8080/api/register 
+import {jwtKey} from "../../secret.js"
+/** POST: http://localshost:8080/api/register 
  * @param : {
   "username" : "example123",
   "password" : "admin123",
@@ -18,6 +19,7 @@ import cookieParser from "cookie-parser";
 export async function register(req, res) {
   try {
     const { username, password, email, firstName, lastName } = req.body;
+    
 
     // Validation
     const missingFields = checkRequiredFields({
@@ -49,14 +51,18 @@ export async function register(req, res) {
       firstName,
       lastName,
     });
-    var token = jwt.sign({ email: email }, "shhhhh");
+    const token = jwt.sign(
+      { userId: createUser.id, username: username },
+     jwtKey
+    );
+    console.log(jwtKey , token);
     res.cookie("token", token);
-    console.log(token);
+   
     res
       .status(201)
-      .json({ message: "User created successfully", user: createUser });
+      .json({ message: "User created successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err });
   }
 }
 
@@ -72,7 +78,7 @@ function checkRequiredFields(fields) {
   return requiredFields.filter((field) => !fields[field]);
 }
 
-/** POST: http://localhost:8080/api/login 
+/** POST: http://localshost:8080/api/login 
  * @param: {
   "username" : "example123",
   "password" : "admin123"
@@ -81,9 +87,9 @@ function checkRequiredFields(fields) {
 
 export async function login(req, res) {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ username: username });
     if (!user) {
       return res
         .status(401)
@@ -97,7 +103,9 @@ export async function login(req, res) {
         .json({ success: false, message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ email: email }, "shhhhh", { expiresIn: "24h" });
+    const token = jwt.sign({ userId: user.id, username: username }, "jwtKey", {
+      expiresIn: "24h",
+    });
 
     res.cookie("token", token, { httpOnly: true });
     res
@@ -108,7 +116,7 @@ export async function login(req, res) {
   }
 }
 
-/** GET: http://localhost:8080/api/user/example123 */
+/** GET: http://localshost:8080/api/user/example123 */
 export async function getUser(req, res) {
   try {
     console.log("user");
@@ -131,10 +139,10 @@ export async function getUser(req, res) {
   }
 }
 
-
-/** GET: http://localhost:8080/api/updateuser?id=123455  */
+/** PUT: http://localshost:8080/api/updateuser?id=123455  */
 export async function updateUser(req, res) {
-  const id = req.query.id;
+  //const id = req.query.id;
+  const id = req.user.userId;
   if (id) {
     try {
       const userdata = req.body;
@@ -145,21 +153,70 @@ export async function updateUser(req, res) {
       );
       return res.status(200).json({ message: "success", user: updatedUser });
     } catch (error) {
-      return response.status(404).json({ message: error.message });
+      return res.status(404).json({ message: error.message });
     }
   } else {
     res.status(404).json({ message: "Invalid userId" });
   }
 }
 
-/** GET: http://localhost:8080/api/generateOTP */
-export async function generateOTP(req, res) {}
+/** GET: http://localshost:8080/api/generateOTP */
+export function generateOTP(req, res) {
+  const OTP = otpGenerator.generate(6, {
+    upperCaseAlphabets: false,
+    specialChars: false,
+  });
+  req.app.locals.OTP = OTP;
+  return res.status(201).json({ code: req.app.locals.OTP });
+}
 
-/** GET: http://localhost:8080/api/verifyOTP */
-export async function verifyOTP(req, res) {}
+/** GET: http://localshost:8080/api/verifyOTP */
+export async function verifyOTP(req, res) {
+  const { otp } = req.query; //get opt-code from user
 
-/** GET: http://localhost:8080/api/createResetSession */
-export async function createResetSession(req, res) {}
+  if (req.app.locals === undefined) {
+    return res.status(402).json({ message: "OTP is expired" });
+  }
 
-/** PUT: http://localhost:8080/api/resetPassword */
-export async function resetPassword(req, res) {}
+  if (parseInt(req.app.locals.OTP) === parseInt(otp)) {
+    req.app.locals.OTP = null; //reset the otp
+    req.app.locals.resetSession = true; // start the session for the reset password
+    return res.send("User verified");
+  }
+
+  return res.status(400).json({ message: "Invalid OTP" });
+}
+
+/** GET: http://localshost:8080/api/createResetSession */
+export async function createResetSession(req, res) {
+  if (req.app.locals.resetSession) {
+    req.app.locals.resetSession = false; //allow access this route only once
+    return res.status(440).send( {error : "Session Expried" });
+  }
+ 
+}
+
+/** PUT: http://localshost:8080/api/resetPassword */
+export async function resetPassword(req, res) {
+  try {
+   
+    if(!req.app.locals.resetSession) return res.status(404).send( {error : "Session Expried" });
+    const { username, password } = req.body;
+    if(!username || !password) return res.status(401).send( {error : "Invalid username or password" });
+    const user = await userModel.findOne({username:username});
+    if (!user) return res.status(403).send({ error: "User not found!" });
+    else {
+      // Password Hashing
+      const hash = await bcrypt.hash(password, 10);
+      user.password = hash;
+      await user.save(); // Save the updated user
+      req.app.locals.resetSession = false; // reset session
+      return res
+        .status(200)
+        .json({ message: "Password updated successfully"});
+
+    }
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+}
