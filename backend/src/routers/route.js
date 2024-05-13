@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createResetSession, generateOTP, getUser, login, register, resetPassword, updateUser, verifyOTP } from "../controllers/user.controller.js";
 import auth, { localVariable } from "../middleware/auth.js";
+import { registerMail } from "../controllers/mailer.js";
 
 const router = new Router();
 
@@ -8,12 +9,8 @@ const router = new Router();
 /** post methods */
 router.post('/register', register);
 router.post("/login", login);
+router.route("/registerMail").post(registerMail);
 
-
-
-// router.route("/registerMail").post();
-// router.route("/authenticate").post();
-// router.route("/login".post());
 
 
 // /** Get method */
