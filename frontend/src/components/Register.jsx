@@ -1,59 +1,66 @@
 import { Link } from "react-router-dom";
 import styles from "../styles/Username.module.css";
 import { useFormik } from "formik";
-import toast from "react-hot-toast";
+
 import { useState } from "react";
+import { validateRegister } from "../helper/validate";
+import  { Toaster } from "react-hot-toast";
 const Register = () => {
-  const[file, setfile] = useState();
-  /** Valiadte Password */
-  const validatePassword = (values) => {
-    const errors = {};
-    if (!values.password) {
-      errors.password = toast.error("Password is required");
-    } else if (values.password.length < 5) {
-      errors.password = toast.error("Password must be at least 5 characters");
-    }
-    return errors;
-  };
+  const [file, setfile] = useState();
+  
   const formik = useFormik({
     initialValues: {
+      email: "",
+      username: "",
       password: "",
     },
-    validate: validatePassword,
+    validate: validateRegister,
     validateOnBlur: false,
     validateOnChange: false,
 
-    onSubmit: async values =>{
-      values = Object.assign(values, { profile: file || '' })
-    }
+    onSubmit: async (values) => {
+      values = Object.assign(values, { profile: file || "" });
+      console.log(values);
+    },
   });
 
-/**function for convert img to 64base */
-const convertToBase64 = (file) =>{
-  return new Promise((resolve, reject) => {
-    const fileReader = new FileReader();
-    fileReader.readAsDataURL(file);
+  /**function for convert img to 64base */
+  const convertToBase64 = async (file) => {
+    try {
+      const fileReader = new FileReader();
 
-    fileReader.onload = () => {
-        resolve(fileReader.result)
-    }
+      const base64 = await new Promise((resolve, reject) => {
+        fileReader.readAsDataURL(file);
 
-    fileReader.onerror = (error) => {
-        reject(error)
+        fileReader.onload = () => {
+          resolve(fileReader.result);
+        };
+
+        fileReader.onerror = (error) => {
+          reject(error);
+        };
+      });
+
+      return base64;
+    } catch (error) {
+      throw new Error("Failed to convert file to Base64: " + error.message);
     }
-})
-}
+  };
 
   /** formik doesnt support file upload */
-  const onUpload = async(e) =>{
-    const base64=await convertToBase64(e.target.files[0]);
-    setfile(base64)
-  }
+  const onUpload = async (e) => {
+    const base64 = await convertToBase64(e.target.files[0]);
+    setfile(base64);
+  };
 
   return (
     <div className="container mx-auto">
+      <Toaster/>
       <div className="flex items-center justify-center  h-screen border-sky-200">
-        <div className={styles.glass}  style={{ width: "35%", height: "90%", paddingTop: '3em'}}>
+        <div
+          className={styles.glass}
+          style={{ width: "35%", height: "90%", paddingTop: "3em" }}
+        >
           <div className="title flex flex-col items-center ">
             <h4 className="text-5xl font-bold">Register</h4>
             <span className="py-4 text-xl w-2/3 text-center text-gray-500">
@@ -69,7 +76,12 @@ const convertToBase64 = (file) =>{
                   alt="avatar"
                 />
               </label>
-              <input type="file" id="profile" name="profile" onChange={onUpload}/>
+              <input
+                type="file"
+                id="profile"
+                name="profile"
+                onChange={onUpload}
+              />
             </div>
 
             <div className="textbox flex flex-col items-center gap-4">

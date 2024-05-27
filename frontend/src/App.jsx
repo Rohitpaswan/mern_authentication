@@ -9,7 +9,7 @@ import Password from "./components/Password";
 import Reset from "./components/Reset";
 import Recovery from "./components/Recovery";
 import Profile from "./components/Profile";
-import { Toaster } from "react-hot-toast";
+
 
 /** root routes */
 const router = createBrowserRouter([

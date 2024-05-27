@@ -2,30 +2,20 @@ import { Link } from "react-router-dom";
 import styles from "../styles/Username.module.css";
 import { useFormik } from "formik";
 import { useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import  { Toaster } from "react-hot-toast";
+import { usernameVerify } from "../helper/validate";
 
 
 const Username = () => {
   const [submitting, setSubmitting] = useState(false);
 
-  /** Validate username */
-  const validate = (values) => {
-    const errors = {};
-    if (!values.username) {
-      errors.username = toast.error("Username is required");
-    } else if (values.username.length < 3) {
-      errors.username = toast.error("Username must be at least 3 characters");
-    } else if (values.username !== values.username.toLowerCase()) {
-      errors.username = toast.error("Username must be lowercase");
-    }
-    return errors;
-  };
+  
 
   const formik = useFormik({
     initialValues: {
       username: "",
     },
-    validate: validate,
+    validate: usernameVerify,
     validateOnBlur: false,
     validateOnChange: false,
     onSubmit: (values) => {

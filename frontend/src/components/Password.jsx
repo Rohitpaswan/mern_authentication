@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import styles from "../styles/Username.module.css";
 import { useFormik } from "formik";
-import toast  from "react-hot-toast";
+import toast, { Toaster }  from "react-hot-toast";
 const Password = () => {
   /** Valiadte Password */
   const validatePassword = (values) => {
@@ -30,6 +30,7 @@ const Password = () => {
 
   return (
     <div className="container mx-auto">
+      <Toaster/>
       <div className="flex items-center justify-center  h-screen border-sky-200">
         <div className={styles.glass}>
           <div className="title flex flex-col items-center">
